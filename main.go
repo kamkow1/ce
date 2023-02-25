@@ -7,31 +7,10 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-func makeBox(screen tcell.Screen, width, height int, style tcell.Style) {
-  w, h := screen.Size()
-  if w == 0 || h == 0 {
-    return
-  }
-  for row := 0; row < h; row++ {
-    for col := 0; col < w; col++ {
-      screen.SetCell(row, col, style, '@')
-    }
-  }
-  screen.Show()
-} 
-
-func displayBuffer(screen tcell.Screen, style tcell.Style, buffer string) {
-  row := 1
-  col := 1
-  for _, ch := range buffer {
-    if ch == '\n' {
-      row++
-      col = 1
-    } else {
-      col++
-    }
-    screen.SetCell(col, row, style, ch)
-  }
+func replaceAt(in string, r rune, i int) string {
+  out := []rune(in)
+  out[i] = r
+  return string(out)
 }
 
 func getInitialFile() string {
@@ -69,30 +48,56 @@ func main() {
   }
   defer quit()
 
-  buffer := getInitialFile()
+  textBuffer := getInitialFile()
+  buffer := NewBuffer(textBuffer)
 
   for {
     event := screen.PollEvent()
+    w, h := screen.Size()
+
     switch event := event.(type) {
     case *tcell.EventResize:
       screen.Sync()
     case *tcell.EventKey:
       switch event.Key() {
       case tcell.KeyRune:
-      case tcell.KeyUp:
-        cursor.Y -= 1
-      case tcell.KeyDown:
-        cursor.Y += 1
-      case tcell.KeyLeft:
-        cursor.X -= 1
-      case tcell.KeyRight:
+        if cursor.X == len(buffer.Lines[cursor.Y-1]) {
+          buffer.Lines[cursor.Y-1] += " "
+        }
+        oldLine := buffer.Lines[cursor.Y-1]
+        buffer.Lines[cursor.Y-1] = oldLine[:cursor.X-1] + string(event.Rune()) + oldLine[cursor.X-1:]
         cursor.X += 1
+      case tcell.KeyUp:
+        if cursor.Y > 1 {
+          cursor.Y -= 1
+        }
+        
+        if cursor.X > len(buffer.Lines[cursor.Y-1]) {
+          cursor.X = len(buffer.Lines[cursor.Y-1])
+        }
+      case tcell.KeyDown:
+        if cursor.X > len(buffer.Lines[cursor.Y]) {
+          cursor.X = len(buffer.Lines[cursor.Y])
+        }
+
+        if cursor.Y < h {
+          cursor.Y += 1
+        }
+      case tcell.KeyLeft:
+        if cursor.X > 1 {
+          cursor.X -= 1
+        }
+
+      case tcell.KeyRight:
+        if cursor.X < w && cursor.X < len(buffer.Lines[cursor.Y-1]) {
+          cursor.X += 1
+        }
       case tcell.KeyEscape, tcell.KeyCtrlC:
         return
       }
     }
 
-    displayBuffer(screen, defaultStyle, buffer)
+    buffer.Display(screen, defaultStyle)
     screen.SetCursorStyle(cursor.Style)
     screen.ShowCursor(cursor.X, cursor.Y)
     screen.Show()
