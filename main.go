@@ -50,6 +50,7 @@ func main() {
 
   textBuffer := getInitialFile()
   buffer := NewBuffer(textBuffer)
+  editor := NewEditor()
 
   for {
     event := screen.PollEvent()
@@ -61,12 +62,20 @@ func main() {
     case *tcell.EventKey:
       switch event.Key() {
       case tcell.KeyRune:
-        if cursor.X == len(buffer.Lines[cursor.Y-1]) {
-          buffer.Lines[cursor.Y-1] += " "
+        switch editor.Mode {
+        case ModeView:
+          switch event.Rune() {
+          case 'i':
+            editor.Mode = ModeEdit
+          }
+        case ModeEdit:
+          if cursor.X == len(buffer.Lines[cursor.Y-1]) {
+            buffer.Lines[cursor.Y-1] += " "
+          }
+          oldLine := buffer.Lines[cursor.Y-1]
+          buffer.Lines[cursor.Y-1] = oldLine[:cursor.X-1] + string(event.Rune()) + oldLine[cursor.X-1:]
+          cursor.X += 1
         }
-        oldLine := buffer.Lines[cursor.Y-1]
-        buffer.Lines[cursor.Y-1] = oldLine[:cursor.X-1] + string(event.Rune()) + oldLine[cursor.X-1:]
-        cursor.X += 1
       case tcell.KeyUp:
         if cursor.Y > 1 {
           cursor.Y -= 1
@@ -94,6 +103,8 @@ func main() {
         }
       case tcell.KeyEscape, tcell.KeyCtrlC:
         return
+      case tcell.KeyCtrlI:
+        editor.Mode = ModeView
       }
     }
 
