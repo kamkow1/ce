@@ -1,11 +1,50 @@
 package main
 
-import "log"
+import (
+	"log"
+  "os"
 
-import "github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
+)
+
+func makeBox(screen tcell.Screen, width, height int, style tcell.Style) {
+  w, h := screen.Size()
+  if w == 0 || h == 0 {
+    return
+  }
+  for row := 0; row < h; row++ {
+    for col := 0; col < w; col++ {
+      screen.SetCell(row, col, style, '@')
+    }
+  }
+  screen.Show()
+} 
+
+func displayBuffer(screen tcell.Screen, style tcell.Style, buffer string) {
+  row := 1
+  col := 1
+  for _, ch := range buffer {
+    if ch == '\n' {
+      row++
+      col = 1
+    } else {
+      col++
+    }
+    screen.SetCell(col, row, style, ch)
+  }
+}
+
+func getInitialFile() string {
+  filename := os.Args[1]
+  b, err := os.ReadFile(filename)
+  if err != nil {
+    log.Fatalf("%+v", err)
+  }
+  return string(b)
+}
 
 func main() {
-  defaultStyle := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorBlack)
+  defaultStyle := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
   screen, err := tcell.NewScreen()
   if err != nil {
     log.Fatalf("%+v", err)
@@ -17,6 +56,9 @@ func main() {
   screen.EnableMouse()
   screen.Clear()
 
+  // cursor
+  screen.SetCursorStyle(tcell.CursorStyleSteadyBlock)
+
   quit := func() {
     maybePanic := recover()
     screen.Fini()
@@ -26,17 +68,22 @@ func main() {
   }
   defer quit()
 
+  buffer := getInitialFile()
+
   for {
-    screen.Show()
+    displayBuffer(screen, defaultStyle, buffer)
+
     event := screen.PollEvent()
     switch event := event.(type) {
     case *tcell.EventResize:
       screen.Sync()
     case *tcell.EventKey:
-      key := event.Key()
-      if key == tcell.KeyEscape || key == tcell.KeyCtrlC {
+      switch event.Key() {
+      case tcell.KeyRune:
+      case tcell.KeyEscape, tcell.KeyCtrlC:
         return
       }
     }
+    screen.Show()
   }
 }
