@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-  "os"
+	"os"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -57,7 +57,8 @@ func main() {
   screen.Clear()
 
   // cursor
-  screen.SetCursorStyle(tcell.CursorStyleSteadyBlock)
+  cursor := NewCursor()
+  cursor.SetStyle(tcell.CursorStyleSteadyBlock)
 
   quit := func() {
     maybePanic := recover()
@@ -71,8 +72,6 @@ func main() {
   buffer := getInitialFile()
 
   for {
-    displayBuffer(screen, defaultStyle, buffer)
-
     event := screen.PollEvent()
     switch event := event.(type) {
     case *tcell.EventResize:
@@ -80,10 +79,22 @@ func main() {
     case *tcell.EventKey:
       switch event.Key() {
       case tcell.KeyRune:
+      case tcell.KeyUp:
+        cursor.Y -= 1
+      case tcell.KeyDown:
+        cursor.Y += 1
+      case tcell.KeyLeft:
+        cursor.X -= 1
+      case tcell.KeyRight:
+        cursor.X += 1
       case tcell.KeyEscape, tcell.KeyCtrlC:
         return
       }
     }
+
+    displayBuffer(screen, defaultStyle, buffer)
+    screen.SetCursorStyle(cursor.Style)
+    screen.ShowCursor(cursor.X, cursor.Y)
     screen.Show()
   }
 }
