@@ -98,7 +98,10 @@ func main() {
         case ModeView:
           cursor.MoveDown(buffer, h)
         case ModeEdit:
-          ArrayInsert(buffer.Lines, cursor.Y-StartYPos, "")
+          buffer.Lines, err = ArrayInsert(buffer.Lines, cursor.Y-StartYPos, "")
+          if err != nil {
+            log.Fatalf("%+v", err)
+          }
         }
       case tcell.KeyUp:
         cursor.MoveUp(buffer)
