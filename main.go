@@ -116,10 +116,15 @@ func main() {
     }
 
     screen.Clear()
+
     ui.ShowStatusBar(screen, defaultStyle, *cursor, len(textBuffer), *editor)
+    ui.DisplayLineNumbers(screen, defaultStyle, len(buffer.Lines))
+
     buffer.Display(screen, defaultStyle)
+
     screen.SetCursorStyle(cursor.Style)
     screen.ShowCursor(cursor.X, cursor.Y)
+
     screen.Show()
   }
 }

@@ -3,10 +3,10 @@ package main
 
 import (
   "fmt"
+  "strconv"
 
   "github.com/gdamore/tcell/v2"
 )
-
 
 type UI struct {
   CurrentBufferName string
@@ -43,5 +43,11 @@ func (ui *UI) ShowStatusBar(screen tcell.Screen, style tcell.Style, cursor Curso
   ui.PutText(screen, style, 1, 0, bufferName)
   ui.PutText(screen, style, len(bufferName) + 3, 0, cursorInfo)
   ui.PutText(screen, style, 1, 1, modeInfo)
+}
+
+func (ui *UI) DisplayLineNumbers(screen tcell.Screen, style tcell.Style, bufferLen int) {
+  for i := 0; i < bufferLen; i++ {
+    ui.PutText(screen, style, 1, i + StartYPos, strconv.Itoa(i))
+  }
 }
 

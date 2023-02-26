@@ -20,7 +20,7 @@ func (c *Cursor) MoveDown(buffer *Buffer, h int) {
     cursor.X = len(buffer.Lines[cursor.Y-StartYPos])
   }
 
-  if cursor.Y < h && cursor.Y <= len(buffer.Lines){
+  if cursor.Y < h && cursor.Y <= len(buffer.Lines)+1 {
     cursor.Y += 1
   }
 }
