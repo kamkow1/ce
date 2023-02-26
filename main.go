@@ -99,7 +99,12 @@ func main() {
         case ModeView:
           cursor.MoveDown(buffer, h)
         case ModeEdit:
-          buffer.Lines, err = ArrayInsert(buffer.Lines, cursor.Y-StartYPos, "")
+          spaces := ""
+          for i := 0; i < cursor.X; i++ {
+            spaces += " "
+          }
+
+          buffer.Lines, err = ArrayInsert(buffer.Lines, cursor.Y-StartYPos, spaces)
           if err != nil {
             log.Fatalf("%+v", err)
           }
