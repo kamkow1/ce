@@ -1,6 +1,10 @@
 package main
 
-import "github.com/gdamore/tcell/v2"
+import (
+  "strings"
+
+  "github.com/gdamore/tcell/v2"
+)
 
 const (
   StartXPos = 6
@@ -12,6 +16,10 @@ type Buffer struct {
 }
 
 func NewBuffer(textBuffer string) *Buffer {
+  if strings.Count(textBuffer, "\n") == 0 {
+    textBuffer += "\n"
+  }
+
   b := &Buffer{}
   line := ""
   for _, ch := range textBuffer {

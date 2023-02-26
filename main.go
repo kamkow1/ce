@@ -68,7 +68,7 @@ func main() {
   editor = NewEditor()
   ui = NewUI()
   var textBuffer string
-  if len(os.Args) > 0 {
+  if len(os.Args) > 1 {
     textBuffer = getInitialFile()
     absPath, err := filepath.Abs(os.Args[1])
     if err != nil {
@@ -78,6 +78,7 @@ func main() {
     ui.CurrentBufferName = absPath
   } else {
     textBuffer = "New Buffer"
+    ui.CurrentBufferName = "Temporary"
   }
 
   buffer = NewBuffer(textBuffer)
