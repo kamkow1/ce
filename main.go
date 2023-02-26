@@ -8,6 +8,11 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+var editor *Editor
+var cursor *Cursor
+var buffer *Buffer
+var ui *UI
+
 func getInitialFile() string {
   filename := os.Args[1]
   b, err := os.ReadFile(filename)
@@ -15,6 +20,23 @@ func getInitialFile() string {
     log.Fatalf("%+v", err)
   }
   return string(b)
+}
+
+func handleTextKey(key rune) {
+  switch editor.Mode {
+  case ModeView:
+    switch key {
+    case 'i':
+      editor.Mode = ModeEdit
+    }
+  case ModeEdit:
+    if cursor.X == len(buffer.Lines[cursor.Y-StartYPos]) {
+      buffer.Lines[cursor.Y-StartYPos] += " "
+    }
+    oldLine := buffer.Lines[cursor.Y-StartYPos]
+    buffer.Lines[cursor.Y-StartYPos] = oldLine[:cursor.X-StartXPos] + string(key) + oldLine[cursor.X-StartXPos:]
+    cursor.X += 1
+  }
 }
 
 func main() {
@@ -31,7 +53,7 @@ func main() {
   screen.Clear()
 
   // cursor
-  cursor := NewCursor()
+  cursor = NewCursor()
   cursor.SetStyle(tcell.CursorStyleSteadyBlock)
 
   quit := func() {
@@ -43,8 +65,8 @@ func main() {
   }
   defer quit()
 
-  editor := NewEditor()
-  ui := NewUI()
+  editor = NewEditor()
+  ui = NewUI()
   var textBuffer string
   if len(os.Args) > 0 {
     textBuffer = getInitialFile()
@@ -58,7 +80,7 @@ func main() {
     textBuffer = "New Buffer"
   }
 
-  buffer := NewBuffer(textBuffer)
+  buffer = NewBuffer(textBuffer)
 
   for {
     event := screen.PollEvent()
@@ -70,44 +92,22 @@ func main() {
     case *tcell.EventKey:
       switch event.Key() {
       case tcell.KeyRune:
+        handleTextKey(event.Rune())
+      case tcell.KeyEnter:
         switch editor.Mode {
         case ModeView:
-          switch event.Rune() {
-          case 'i':
-            editor.Mode = ModeEdit
-          }
+          cursor.MoveDown(buffer, h)
         case ModeEdit:
-          if cursor.X == len(buffer.Lines[cursor.Y-StartYPos]) {
-            buffer.Lines[cursor.Y-StartYPos] += " "
-          }
-          oldLine := buffer.Lines[cursor.Y-StartYPos]
-          buffer.Lines[cursor.Y-StartYPos] = oldLine[:cursor.X-StartXPos] + string(event.Rune()) + oldLine[cursor.X-StartXPos:]
-          cursor.X += 1
+          ArrayInsert(buffer.Lines, cursor.Y-StartYPos, "")
         }
       case tcell.KeyUp:
-        if cursor.Y > StartYPos {
-          cursor.Y -= 1
-        }
-        
-        if cursor.X > len(buffer.Lines[cursor.Y-StartYPos]) {
-          cursor.X = len(buffer.Lines[cursor.Y-StartYPos])
-        }
+        cursor.MoveUp(buffer)
       case tcell.KeyDown:
-        if cursor.X > len(buffer.Lines[cursor.Y-StartYPos]) {
-          cursor.X = len(buffer.Lines[cursor.Y-StartYPos])
-        }
-
-        if cursor.Y < h && cursor.Y <= len(buffer.Lines){
-          cursor.Y += 1
-        }
+        cursor.MoveDown(buffer, h)
       case tcell.KeyLeft:
-        if cursor.X > StartXPos {
-          cursor.X -= 1
-        }
+        cursor.MoveLeft()
       case tcell.KeyRight:
-        if cursor.X < w && cursor.X < len(buffer.Lines[cursor.Y-StartYPos]) + StartXPos {
-          cursor.X += 1
-        }
+        cursor.MoveRight(buffer, w)
       case tcell.KeyEscape, tcell.KeyCtrlC:
         return
       case tcell.KeyCtrlI:
@@ -115,6 +115,7 @@ func main() {
       }
     }
 
+    screen.Clear()
     ui.ShowStatusBar(screen, defaultStyle, *cursor, len(textBuffer), *editor)
     buffer.Display(screen, defaultStyle)
     screen.SetCursorStyle(cursor.Style)
