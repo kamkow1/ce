@@ -2,6 +2,11 @@ package main
 
 import "github.com/gdamore/tcell/v2"
 
+const (
+  StartXPos = 6
+  StartYPos = 3
+)
+
 type Buffer struct {
   Lines []string
 }
@@ -22,9 +27,9 @@ func NewBuffer(textBuffer string) *Buffer {
 }
 
 func (b *Buffer) Display(screen tcell.Screen, style tcell.Style) {
-  row := 1
+  row := StartYPos
   for _, line := range b.Lines {
-    col := 1
+    col := StartXPos
     for _, ch := range line {
       screen.SetCell(col, row, style, ch)
       col++

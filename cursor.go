@@ -8,7 +8,7 @@ type Cursor struct {
 }
 
 func NewCursor() *Cursor {
-  return &Cursor{X: 1, Y: 1}
+  return &Cursor{X: StartXPos, Y: StartYPos}
 }
 
 func (c *Cursor) SetStyle(style tcell.CursorStyle) {

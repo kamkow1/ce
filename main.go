@@ -3,15 +3,10 @@ package main
 import (
 	"log"
 	"os"
+  "path/filepath"
 
 	"github.com/gdamore/tcell/v2"
 )
-
-func replaceAt(in string, r rune, i int) string {
-  out := []rune(in)
-  out[i] = r
-  return string(out)
-}
 
 func getInitialFile() string {
   filename := os.Args[1]
@@ -48,9 +43,22 @@ func main() {
   }
   defer quit()
 
-  textBuffer := getInitialFile()
-  buffer := NewBuffer(textBuffer)
   editor := NewEditor()
+  ui := NewUI()
+  var textBuffer string
+  if len(os.Args) > 0 {
+    textBuffer = getInitialFile()
+    absPath, err := filepath.Abs(os.Args[1])
+    if err != nil {
+      log.Fatalf("%+v", err)
+    }
+
+    ui.CurrentBufferName = absPath
+  } else {
+    textBuffer = "New Buffer"
+  }
+
+  buffer := NewBuffer(textBuffer)
 
   for {
     event := screen.PollEvent()
@@ -69,36 +77,35 @@ func main() {
             editor.Mode = ModeEdit
           }
         case ModeEdit:
-          if cursor.X == len(buffer.Lines[cursor.Y-1]) {
-            buffer.Lines[cursor.Y-1] += " "
+          if cursor.X == len(buffer.Lines[cursor.Y-StartYPos]) {
+            buffer.Lines[cursor.Y-StartYPos] += " "
           }
-          oldLine := buffer.Lines[cursor.Y-1]
-          buffer.Lines[cursor.Y-1] = oldLine[:cursor.X-1] + string(event.Rune()) + oldLine[cursor.X-1:]
+          oldLine := buffer.Lines[cursor.Y-StartYPos]
+          buffer.Lines[cursor.Y-StartYPos] = oldLine[:cursor.X-StartXPos] + string(event.Rune()) + oldLine[cursor.X-StartXPos:]
           cursor.X += 1
         }
       case tcell.KeyUp:
-        if cursor.Y > 1 {
+        if cursor.Y > StartYPos {
           cursor.Y -= 1
         }
         
-        if cursor.X > len(buffer.Lines[cursor.Y-1]) {
-          cursor.X = len(buffer.Lines[cursor.Y-1])
+        if cursor.X > len(buffer.Lines[cursor.Y-StartYPos]) {
+          cursor.X = len(buffer.Lines[cursor.Y-StartYPos])
         }
       case tcell.KeyDown:
-        if cursor.X > len(buffer.Lines[cursor.Y]) {
-          cursor.X = len(buffer.Lines[cursor.Y])
+        if cursor.X > len(buffer.Lines[cursor.Y-StartYPos]) {
+          cursor.X = len(buffer.Lines[cursor.Y-StartYPos])
         }
 
-        if cursor.Y < h {
+        if cursor.Y < h && cursor.Y <= len(buffer.Lines){
           cursor.Y += 1
         }
       case tcell.KeyLeft:
-        if cursor.X > 1 {
+        if cursor.X > StartXPos {
           cursor.X -= 1
         }
-
       case tcell.KeyRight:
-        if cursor.X < w && cursor.X < len(buffer.Lines[cursor.Y-1]) {
+        if cursor.X < w && cursor.X < len(buffer.Lines[cursor.Y-StartYPos]) + StartXPos {
           cursor.X += 1
         }
       case tcell.KeyEscape, tcell.KeyCtrlC:
@@ -108,6 +115,7 @@ func main() {
       }
     }
 
+    ui.ShowStatusBar(screen, defaultStyle, *cursor, len(textBuffer), *editor)
     buffer.Display(screen, defaultStyle)
     screen.SetCursorStyle(cursor.Style)
     screen.ShowCursor(cursor.X, cursor.Y)
