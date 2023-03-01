@@ -14,3 +14,12 @@ func ArrayInsert[T interface{}](og []T, index int, value T) ([]T, error) {
   og[index] = value
   return og, nil
 }
+
+func ArrayDelete[T interface{}](og []T, index int) []T {
+  if !(index < 0 || index >= len(og)) {
+    og = append(og[:index], og[index+1:]...)
+  }
+
+  return og
+}
+

@@ -99,15 +99,31 @@ func main() {
         case ModeView:
           cursor.MoveDown(buffer, h)
         case ModeEdit:
-          spaces := ""
-          for i := 0; i < cursor.X; i++ {
-            spaces += " "
+          movedText := ""
+          for i := 0; i < cursor.X-StartXPos; i++ {
+            movedText += " "
           }
 
-          buffer.Lines, err = ArrayInsert(buffer.Lines, cursor.Y-StartYPos, spaces)
+          if len(buffer.Lines[cursor.Y-StartYPos]) >= cursor.X {
+            movedText += buffer.Lines[cursor.Y-StartYPos][cursor.X-StartXPos:]
+          }
+
+          for i := cursor.X-StartXPos; i <= len(buffer.Lines[cursor.Y-StartYPos]); i++ {
+            leftText := ArrayDelete([]rune(buffer.Lines[cursor.Y-StartYPos]), i)
+            buffer.Lines[cursor.Y-StartYPos] = string(leftText)
+          }
+
+          buffer.Lines, err = ArrayInsert(buffer.Lines, cursor.Y-StartYPos+1, movedText)
           if err != nil {
             log.Fatalf("%+v", err)
           }
+        }
+      case tcell.KeyDelete:
+        switch editor.Mode {
+        case ModeView:
+          cursor.MoveRight(buffer, w)
+        case ModeEdit:
+          buffer.Lines = ArrayDelete(buffer.Lines, cursor.X-1)
         }
       case tcell.KeyUp:
         cursor.MoveUp(buffer)
